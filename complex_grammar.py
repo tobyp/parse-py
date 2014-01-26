@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from parser import Grammar, Rule, Lexicon, Entry, parse
-from epsilon_grammar import EpsilonGrammar
+from .parser import Grammar, Rule, Lexicon, Entry, parse
+from .epsilon_grammar import EpsilonGrammar
 
 class ComplexGrammar(EpsilonGrammar):
 	'''

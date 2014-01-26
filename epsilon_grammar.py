@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from parser import Rule, Grammar
+from .parser import Rule, Grammar
 from itertools import chain
 
 def space_out_args(nrs, spacing, args):
