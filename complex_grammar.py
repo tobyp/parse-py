@@ -62,7 +62,7 @@ class ComplexGrammar(EpsilonGrammar):
 		Rule( 'term2',  ('token',), lambda t: {'type': 'token', 'token': t} )
 	], 'term')
 
-	def __init__(self, rule_list, start):
+	def __init__(self, rule_list):
 		def gen_name(name, sub, runners):
 			n = name + "_" + sub
 			num = runners.setdefault(n, 0)
@@ -108,7 +108,7 @@ class ComplexGrammar(EpsilonGrammar):
 			if isinstance(rule, (tuple, list)): rule = Rule(*rule)
 			prods.append(Rule(rule.lhs, tuple(simplify_term(rule.lhs, parse(ComplexGrammar.gr_tokens, ComplexGrammar.gr_grammar, " ".join(rule.rhs)), prods)), rule.func))
 		
-		EpsilonGrammar.__init__(self, prods, start)
+		EpsilonGrammar.__init__(self, prods)
 
 def main():
 	lex = Lexicon([

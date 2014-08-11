@@ -36,8 +36,8 @@ class EpsilonGrammar(Grammar):
 	This grammar accepts rules with no terms on the right side (Epsilon rules).
 	It works by converting the epsilon-grammar to a non-epsilon grammar.
 	'''
-	def __init__(self, rules, start):
-		Grammar.__init__(self, rules, start)
+	def __init__(self, rules):
+		Grammar.__init__(self, rules)
 		self.nullability = {}
 		self.nully_rules = {}
 

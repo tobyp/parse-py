@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from json import JSONEncoder
 import re
 
 class Rule:
@@ -32,11 +31,10 @@ class Rule:
 		return self.lhs == other.lhs and self.rhs == other.rhs
 
 class Grammar:
-	def __init__(self, rule_list, start):
+	def __init__(self, rule_list):
 		self.terms = {}
 		for r in rule_list:
 			self.terms.setdefault(r.lhs, []).append(r)
-		self.start = start
 
 	def __getitem__(self, term):
 		return self.terms[term]
@@ -161,7 +159,7 @@ class Recognizer:
 	def __init__(self, grammar):
 		self.grammar = grammar
 
-	def recognize(self, tokens):
+	def recognize(self, tokens, start_nonterminal):
 		def predict(chart, state, j, grammar):
 			for r in grammar.get(state.next(), []):
 				chart[j].add(Edge(r, 0, j))
@@ -177,7 +175,7 @@ class Recognizer:
 					chart[j].add(Edge(e.rule, e.dot+1, e.start, e, state))
 
 		chart = Chart(len(tokens)+1)
-		chart[0].add(Edge(Rule(None, [self.grammar.start], lambda r: r), 0, 0))
+		chart[0].add(Edge(Rule(None, [start_nonterminal], lambda r: r), 0, 0))
 
 		for i in range(0, len(tokens)+1):
 			if len(chart[i]) == 0:
@@ -220,12 +218,12 @@ class Parser:
 		if len(complete_parses) == 0: raise ValueError("No complete parses exist.")
 		return build_node(complete_parses[0])
 
-def parse(lexicon, grammar, input):
+def parse(lexicon, grammar, start_nonterminal, input):
 	s = Scanner(lexicon)
 	tokens = list(s.scan(input))
 	
 	r = Recognizer(grammar)
-	chart = r.recognize(tokens)
+	chart = r.recognize(tokens, start_nonterminal)
 	
 	p = Parser(grammar)
 	tree = p.parse(chart, tokens)
