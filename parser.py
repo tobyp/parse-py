@@ -1,5 +1,6 @@
 # Earley Parser in Python 3
-# Copyright (C) 2013 tobyp
+# Copyright (C) 2013, 2016 tobyp
+# See <http://tobyp.net/parsepy>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +17,7 @@
 
 import re
 
+
 class Rule:
 	def __init__(self, lhs, rhs, func):
 		self.lhs = lhs
@@ -25,10 +27,11 @@ class Rule:
 		self.func = func
 
 	def __repr__(self):
-		return "Rule" + "{" + (self.lhs or "-") + " :== " + " ".join(self.rhs) + "}"
+		return "Rule{{} :== {}}".format(self.lhs or "-", " ".join(self.rhs))
 
 	def __eq__(self, other):
 		return self.lhs == other.lhs and self.rhs == other.rhs
+
 
 class Grammar:
 	def __init__(self, rule_list):
@@ -45,11 +48,13 @@ class Grammar:
 	def get(self, key, default):
 		return self.terms.get(key, default)
 
+
 class Entry:
 	def __init__(self, name, regex, func):
 		self.name = name
 		self.regex = re.compile(regex)
 		self.func = func
+
 
 class Lexicon:
 	def __init__(self, entries):
@@ -58,6 +63,7 @@ class Lexicon:
 	def __iter__(self):
 		return self.entries.__iter__()
 
+
 class Token:
 	def __init__(self, name, text, value):
 		self.name = name
@@ -65,7 +71,8 @@ class Token:
 		self.text = text
 
 	def __repr__(self):
-		return "Token{%s = %r}" % (self.name or "", self.text)
+		return "Token{{} = {!r}}".format(self.name or "", self.text)
+
 
 class Scanner:
 	def __init__(self, lexicon):
@@ -78,18 +85,19 @@ class Scanner:
 			for e in self.lexicon:
 				m = e.regex.match(inp, pos)
 				if m and pos == m.start():
-					if e.name != None:
+					if e.name is not None:
 						yield Token(e.name, m.group(), e.func(m))
 					pos = m.end()
 					break
 			if pos == pos_start:
-				raise ValueError("No token recognized at pos=%d" % pos)
+				raise ValueError("No token recognized at pos={:d}".format(pos))
+
 
 class EdgeSet:
 	def __init__(self):
 		self.content = []
 		self.count = 0
-		
+
 	def add(self, i):
 		try:
 			return self.content[self.content.index(i)]
@@ -98,27 +106,28 @@ class EdgeSet:
 		self.content.append(i)
 		self.count += 1
 		return i
-	
-	def __delitem__(self, idx):      
+
+	def __delitem__(self, idx):
 		if idx >= self.count:
 			raise IndexError
 		del self.content[idx]
 		self.count -= 1
-	
+
 	def __getitem__(self, idx):
 		return self.content[idx]
-	
+
 	def __iter__(self):
 		i = 0
 		while i < self.count:
 			yield self.content[i]
 			i += 1
-	
+
 	def __len__(self):
 		return self.count
-	
+
 	def __repr__(self):
-		return "EdgeSet{" + ", ".join([repr(x) for x in self.content]) + "}"
+		return "EdgeSet{{}}".format(", ".join([repr(x) for x in self.content]))
+
 
 class Edge:
 	def __init__(self, rule, dot, start, previous=None, completing=None):
@@ -136,24 +145,26 @@ class Edge:
 
 	def prev(self):
 		if self.dot > 0:
-			return self.rule.rhs[self.dot-1]
+			return self.rule.rhs[self.dot - 1]
 		return None
 
 	def __repr__(self):
-		return "(" + " ".join([self.rule.lhs or "", ":=="] + list(self.rule.rhs[:self.dot]) + ["."] + list(self.rule.rhs[self.dot:]) + ["@", str(self.start)]) + ")"
+		return "({} ::= {} @ {})".format(self.rule.lhs or "", " ".join(list(self.rule.rhs[:self.dot]) + ["."] + list(self.rule.rhs[self.dot:])), str(self.start))
 
 	def __eq__(self, other):
 		return self.dot == other.dot and self.start == other.start and self.rule == other.rule
 
+
 class Chart:
 	def __init__(self, length):
-		self.sets = [EdgeSet() for i in range(0,length)]
+		self.sets = [EdgeSet() for i in range(0, length)]
 
 	def __getitem__(self, i):
 		return self.sets[i]
 
 	def __repr__(self):
 		return "\n".join(["{" + ("\n" + "\n".join(["\t" + repr(s) for s in sset]) + "\n" if len(sset) > 0 else "") + "}," for sset in self.sets])
+
 
 class Recognizer:
 	def __init__(self, grammar):
@@ -166,20 +177,20 @@ class Recognizer:
 
 		def scan(chart, state, j, tokens):
 			if j < len(tokens) and tokens[j].name == state.next():
-				chart[j+1].add(Edge(state.rule, state.dot+1, state.start, previous=state, completing=tokens[j]))
-				
+				chart[j + 1].add(Edge(state.rule, state.dot + 1, state.start, previous=state, completing=tokens[j]))
+
 		def complete(chart, state, j):
 			completed = state.rule.lhs
 			for e in chart[state.start]:
 				if not e.complete() and e.next() == state.rule.lhs:
-					chart[j].add(Edge(e.rule, e.dot+1, e.start, e, state))
+					chart[j].add(Edge(e.rule, e.dot + 1, e.start, e, state))
 
-		chart = Chart(len(tokens)+1)
+		chart = Chart(len(tokens) + 1)
 		chart[0].add(Edge(Rule(None, [start_nonterminal], lambda r: r), 0, 0))
 
-		for i in range(0, len(tokens)+1):
+		for i in range(0, len(tokens) + 1):
 			if len(chart[i]) == 0:
-				raise ValueError("Unexpected %r at token %d" % (tokens[i-1], i-1), tokens, chart)
+				raise ValueError("Unexpected {!r} at token {:d}".format(tokens[i - 1], i - 1), tokens, chart)
 			for state in chart[i]:
 				if not state.complete():
 					if state.next() in self.grammar:
@@ -188,8 +199,8 @@ class Recognizer:
 						scan(chart, state, i, tokens)
 				else:
 					complete(chart, state, i)
-		
 		return chart
+
 
 class Parser:
 	def __init__(self, grammar):
@@ -214,18 +225,20 @@ class Parser:
 				ch = build_children(state)
 				return state.rule.func(*ch)
 
-		complete_parses = [s for s in chart[-1] if s.rule.lhs == None and s.complete()]
-		if len(complete_parses) == 0: raise ValueError("No complete parses exist.")
+		complete_parses = [s for s in chart[-1] if s.rule.lhs is None and s.complete()]
+		if len(complete_parses) == 0:
+			raise ValueError("No complete parses exist.")
 		return build_node(complete_parses[0])
+
 
 def parse(lexicon, grammar, start_nonterminal, input):
 	s = Scanner(lexicon)
 	tokens = list(s.scan(input))
-	
+
 	r = Recognizer(grammar)
 	chart = r.recognize(tokens, start_nonterminal)
-	
+
 	p = Parser(grammar)
 	tree = p.parse(chart, tokens)
-	
+
 	return tree

@@ -1,5 +1,6 @@
 # Earley Parser in Python 3
-# Copyright (C) 2013 tobyp
+# Copyright (C) 2013, 2016 tobyp
+# See <http://tobyp.net/parsepy>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,9 +18,9 @@
 from .parser import Grammar, Rule, Lexicon, Entry, parse
 from .epsilon_grammar import EpsilonGrammar
 
+
 class ComplexGrammar(EpsilonGrammar):
-	'''
-	Write grammars with some more complicated syntax for optional, alternative, or repeated parts.
+	'''Write grammars with some more complicated syntax for optional, alternative, or repeated parts.
 	term2 (tightest binding operators)
 		(term) - grouping. In a rule, this is passed as a tuple of the contents
 		[term] - optional. In a rulefunc, this is either None or a tuple of the contents
@@ -51,16 +52,16 @@ class ComplexGrammar(EpsilonGrammar):
 	])
 
 	gr_grammar = Grammar([
-		Rule( 'term', ('term', 'term1'), lambda t1, t2: {'type': 'concat', 'left': t1, 'right': t2} ),
-		Rule( 'term', ('term1',), lambda t: t ),
-		Rule( 'term1',  ('term1', 'alt', 'term2'), lambda t1, x, t2: {'type': 'alt', 'left': t1, 'right': t2} ),
-		Rule( 'term1', ('term2',), lambda t: t ),
-		Rule( 'term2',  ('lbrack', 'term', 'rbrack'), lambda x, t, y: {'type': 'optional', 'term': t} ),
-		Rule( 'term2',  ('lbrace', 'term', 'rbrace'), lambda x, t, z: {'type': 'many', 'term': t} ),
-		Rule( 'term2',  ('lbrace', 'term', 'detail', 'token', 'rbrace'), lambda x, t, y, u, z: {'type': 'many_sep', 'term': t, 'sep': u} ),
-		Rule( 'term2',  ('lgroup', 'term', 'rgroup'), lambda l, t, r: {'type': 'group', 'term': t} ),
-		Rule( 'term2',  ('token',), lambda t: {'type': 'token', 'token': t} )
-	], 'term')
+		Rule('term', ('term', 'term1'), lambda t1, t2: {'type': 'concat', 'left': t1, 'right': t2}),
+		Rule('term', ('term1',), lambda t: t),
+		Rule('term1', ('term1', 'alt', 'term2'), lambda t1, x, t2: {'type': 'alt', 'left': t1, 'right': t2}),
+		Rule('term1', ('term2',), lambda t: t),
+		Rule('term2', ('lbrack', 'term', 'rbrack'), lambda x, t, y: {'type': 'optional', 'term': t}),
+		Rule('term2', ('lbrace', 'term', 'rbrace'), lambda x, t, z: {'type': 'many', 'term': t}),
+		Rule('term2', ('lbrace', 'term', 'detail', 'token', 'rbrace'), lambda x, t, y, u, z: {'type': 'many_sep', 'term': t, 'sep': u}),
+		Rule('term2', ('lgroup', 'term', 'rgroup'), lambda l, t, r: {'type': 'group', 'term': t}),
+		Rule('term2', ('token',), lambda t: {'type': 'token', 'token': t})
+	])
 
 	def __init__(self, rule_list):
 		def gen_name(name, sub, runners):
@@ -105,10 +106,11 @@ class ComplexGrammar(EpsilonGrammar):
 
 		prods = []
 		for rule in rule_list:
-			if isinstance(rule, (tuple, list)): rule = Rule(*rule)
-			prods.append(Rule(rule.lhs, tuple(simplify_term(rule.lhs, parse(ComplexGrammar.gr_tokens, ComplexGrammar.gr_grammar, " ".join(rule.rhs)), prods)), rule.func))
-		
+			if isinstance(rule, (tuple, list)):
+				rule = Rule(*rule)
+			prods.append(Rule(rule.lhs, tuple(simplify_term(rule.lhs, parse(ComplexGrammar.gr_tokens, ComplexGrammar.gr_grammar, 'term', " ".join(rule.rhs)), prods)), rule.func))
 		EpsilonGrammar.__init__(self, prods)
+
 
 def main():
 	lex = Lexicon([
@@ -122,12 +124,11 @@ def main():
 	])
 
 	grm = ComplexGrammar([
-		('list', ('NUMBER',), lambda n: n),
-		('list', ('(LPAREN|LBRACE) [{list:COMMA}] (RPAREN|RBRACE)',), lambda l, i, a: list(i and i[0] or []))
-	], 'list')
+		('item', ('NUMBER',), lambda n: n),
+		('item', ('(LPAREN|LBRACE) [{item:COMMA}] (RPAREN|RBRACE)',), lambda l, i, a: list(i and i[0] or []))
+	])
 
-	print(parse(lex, grm, '({5, 3}, ((1, 2), (4, 7, {)}))'))
+	print(parse(lex, grm, 'item', '({5, 3}, ((1, 2), (4, 7, {)}))'))
 
 if __name__ == "__main__":
 	main()
-

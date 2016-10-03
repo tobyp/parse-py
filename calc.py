@@ -1,7 +1,8 @@
 #!/bin/python3
 
 # Earley Parser in Python 3 - Example program
-# Copyright (C) 2013 tobyp
+# Copyright (C) 2013, 2016 tobyp
+# See <http://tobyp.net/parsepy>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,7 +35,7 @@ functions = {
 	'acos': acos,
 	'atan': atan,
 	'sqrt': sqrt,
-	'rt': lambda l, r: l**(1/r),
+	'rt': lambda l, r: l**(1 / r),
 	'exp': exp,
 	'log': log,
 	'log10': lambda x: log10(x),
@@ -44,13 +45,13 @@ functions = {
 	'abs': fabs,
 	'erf': erf,
 	'gamma': gamma,
-	'+': lambda l, r: l+r,
-	'-': lambda l, r: l-r,
-	'*': lambda l, r: l*r,
-	'/': lambda l, r: l/r,
-	'//': lambda l, r: l//r,
-	'%': lambda l, r: l%r,
-	'^': lambda l, r: l**r 
+	'+': lambda l, r: l + r,
+	'-': lambda l, r: l - r,
+	'*': lambda l, r: l * r,
+	'/': lambda l, r: l / r,
+	'//': lambda l, r: l // r,
+	'%': lambda l, r: l % r,
+	'^': lambda l, r: l ** r
 }
 
 math_lexicon = Lexicon([
@@ -73,12 +74,12 @@ math_grammar = Grammar([
 	Rule('expression0', ('ident', '(', 'arglist', ')'), lambda n, l, a, r: functions[n](*a)),
 
 	Rule('arglist', ('expression4',), lambda e: [e]),
-	Rule('arglist', ('arglist', ',', 'expression4',), lambda al, e: al+[e]),
+	Rule('arglist', ('arglist', ',', 'expression4',), lambda al, e: al + [e]),
 
 	Rule('expression0', ('(', 'expression4', ')'), lambda l, i, r: i),
 
 	Rule('expression1', ('expression0',), lambda e: e),
-	Rule('expression1', ('op0', 'expression0',), lambda s, e: e*(-1.0 if s=='-' else 1.0)),
+	Rule('expression1', ('op0', 'expression0',), lambda s, e: e * (-1.0 if s == '-' else 1.0)),
 
 	Rule('expression2', ('expression2', 'op0', 'expression1'), lambda l, o, r: functions[o](l, r)),
 	Rule('expression2', ('expression1',), lambda e: e),
@@ -87,14 +88,16 @@ math_grammar = Grammar([
 	Rule('expression3', ('expression2',), lambda e: e),
 
 	Rule('expression4', ('expression4', 'op2', 'expression3'), lambda l, o, r: functions[o](l, r)),
-	Rule('expression4', ('expression3',), lambda e: e)
-], 'expression4')
+	Rule('expression4', ('expression3',), lambda e: e),
+
+	Rule('expression', ('expression4',), lambda e: e),
+])
 
 if __name__ == '__main__':
 	from sys import stdin
 
 	for l in stdin:
 		try:
-			print(parse(math_lexicon, math_grammar, l))
+			print(parse(math_lexicon, math_grammar, 'expression', l))
 		except:
 			print("Error")
