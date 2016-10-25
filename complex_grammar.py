@@ -38,7 +38,6 @@ class ComplexGrammar(EpsilonGrammar):
 	{A:B} can be A, or A B A, or A B A B A, or A B A B A B A, ...
 	'''
 	gr_tokens = Lexicon([
-		Entry('rule', r'::=|:==', lambda x: None),
 		Entry('alt', r'\|', lambda x: None),
 		Entry('lbrack', r'\[', lambda x: None),
 		Entry('rbrack', r'\]', lambda x: None),

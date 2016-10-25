@@ -50,7 +50,9 @@ class Grammar:
 
 
 class Entry:
-	def __init__(self, name, regex, func):
+	def __init__(self, name, regex=None, func=lambda *args: None):
+		if regex is None:
+			regex = name
 		self.name = name
 		self.regex = re.compile(regex)
 		self.func = func
@@ -71,7 +73,7 @@ class Token:
 		self.text = text
 
 	def __repr__(self):
-		return "Token{{} = {!r}}".format(self.name or "", self.text)
+		return "Token{{{} = {!r}}}".format(self.name or "", self.text)
 
 
 class Scanner:
@@ -90,7 +92,11 @@ class Scanner:
 					pos = m.end()
 					break
 			if pos == pos_start:
-				raise ValueError("No token recognized at pos={:d}".format(pos))
+				raise ValueError("No token recognized at pos={:d} ({})".format(pos, hilight_excerpt(inp, pos)))
+
+
+def hilight_excerpt(s, pos):
+	return repr(s[pos - 10:pos])[1:-1] + '\033[1;31m>\033[0;0m' + repr(s[pos:pos + 10])[1:-1]
 
 
 class EdgeSet:
@@ -162,8 +168,8 @@ class Chart:
 	def __getitem__(self, i):
 		return self.sets[i]
 
-	def __repr__(self):
-		return "\n".join(["{" + ("\n" + "\n".join(["\t" + repr(s) for s in sset]) + "\n" if len(sset) > 0 else "") + "}," for sset in self.sets])
+	def errrepr(self, tokens):
+		return "\n".join(["{ @%d %r" % (i, tokens[i] if i < len(tokens) else None) + ("\n" + "\n".join(["\t" + repr(s) for s in sset]) + "\n" if len(sset) > 0 else "") + "}," for i, sset in enumerate(self.sets)])
 
 
 class Recognizer:
@@ -190,7 +196,7 @@ class Recognizer:
 
 		for i in range(0, len(tokens) + 1):
 			if len(chart[i]) == 0:
-				raise ValueError("Unexpected {!r} at token {:d}".format(tokens[i - 1], i - 1), tokens, chart)
+				raise ValueError("Unexpected {!r} at token {:d} ({})".format(tokens[i - 1], i - 1, chart.errrepr(tokens)))
 			for state in chart[i]:
 				if not state.complete():
 					if state.next() in self.grammar:
@@ -222,7 +228,10 @@ class Parser:
 			if isinstance(state, Token):
 				return state.value
 			else:
-				ch = build_children(state)
+				try:
+					ch = build_children(state)
+				except Exception as e:
+					raise ValueError("Failed to build node for {!r}".format(state)) from e
 				return state.rule.func(*ch)
 
 		complete_parses = [s for s in chart[-1] if s.rule.lhs is None and s.complete()]
